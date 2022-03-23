@@ -77,4 +77,71 @@ function checkIsUsedOrNot(array) {
 }
 
 // console.log(getFiles(__dirname));
-console.log(checkIsUsedOrNot(paths));
+
+// Prettied format of code;
+
+class checkFile {
+	constructor(path_list) {
+		this.path_list = path_list;
+	}
+
+	#getFiles(dirname, files_ = []) {
+		let files = fs.readdirSync(dirname);
+		for (let file in files) {
+			let name = path.join(dirname, files[file]);
+			if (fs.statSync(name).isDirectory()) {
+				getFiles(name, files_);
+			} else {
+				if (name.endsWith(".ts") || name.endsWith(".tsx")) {
+					files_.push(name);
+				}
+			}
+		}
+		return files_;
+	}
+
+	checkIsUsedOrNot() {
+		const notUsedKeys = [];
+		for (let lgFilePath of this.path_list) {
+			const parentPath = path.join(lgFilePath, "..", "..", "..");
+			if (!parentPath.startsWith("packages")) return;
+			let allFiles = this.#getFiles(parentPath);
+			let jsonKeys = JSON.parse(
+				fs.readFileSync(path.join(__dirname, lgFilePath), "utf-8")
+			);
+			for (let item in jsonKeys) {
+				let used = false;
+				loop1: for (const i of allFiles) {
+					let fileBody = fs.readFileSync(
+						path.join(__dirname, i),
+						"utf-8"
+					);
+					fileBody = fileBody.split("\n");
+					for (let line of fileBody) {
+						line = line.trim();
+						if (
+							!line.startsWith("//") &&
+							line.includes(item) &&
+							!line.includes("/*") &&
+							!line.includes("*/")
+						) {
+							used = true;
+							break loop1;
+						} else {
+							used = false;
+						}
+					}
+				}
+				if (!used)
+					notUsedKeys.push({
+						lF: lgFilePath,
+						key: item,
+					});
+			}
+		}
+		return notUsedKeys;
+	}
+}
+
+const check = new checkFile(paths);
+console.log(check.checkIsUsedOrNot());
