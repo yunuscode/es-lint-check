@@ -39,19 +39,31 @@ function checkIsUsedOrNot(array) {
 		for (let item in jsonKeys) {
 			// Har bir til propertisini tekshirib chiqamiz
 			let used = false;
-			for (const i of allFiles) {
+			loop1: for (const i of allFiles) {
 				let fileBody = fs.readFileSync(
 					path.join(__dirname, i),
 					"utf-8"
 				);
+				fileBody = fileBody.split("\n");
+
+				for (let line of fileBody) {
+					line = line.trim();
+					if (
+						!line.startsWith("//") &&
+						line.includes(item) &&
+						!line.includes("/*") &&
+						!line.includes("*/")
+					) {
+						// anti komment :)
+						used = true;
+						break loop1;
+					} else {
+						used = false;
+					}
+				}
+
 				// faylni o'qiymiz
 				// Agar ichida shu so'z ishlatilgan bo'lsa qo'shmaymiz, bo'lmasa ro'yxatga qo'shamiz
-				if (fileBody.includes(item)) {
-					used = true;
-					break;
-				} else {
-					used = false;
-				}
 			}
 			if (!used)
 				notUsedKeys.push({
